@@ -49,3 +49,28 @@ func (h *Handlers) IngestLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusAccepted)
 }
+
+func (h *Handlers) GetDailyUniqueUsers(w http.ResponseWriter, r *http.Request) {
+	dateStr := r.URL.Query().Get("date")
+	if dateStr == "" {
+		http.Error(w, "date required", http.StatusBadRequest)
+		return
+	}
+	tz := r.URL.Query().Get("tz")
+	if tz == "" {
+		tz = "UTC"
+	}
+
+	day, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		http.Error(w, "invalid date", http.StatusBadRequest)
+		return
+	}
+
+	n, err := h.svc.GetDailyUniqueUsers(r.Context(), day, tz)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]any{"date": dateStr, "tz": tz, "unique_users": n})
+}

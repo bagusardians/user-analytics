@@ -17,3 +17,9 @@ func (r *UserPgRepo) IngestLogin(ctx context.Context, userID uuid.UUID, tsUTC ti
 	fmt.Println("login ingested with: userId: ", userID, ", tsUTC: ", tsUTC, ", tz: ", tz)
 	return nil
 }
+
+func (r *UserPgRepo) GetDailyUniqueUsers(ctx context.Context, day time.Time, tz string) (int, error) {
+	// TODO: retrieve from db
+	fmt.Println("GetDailyUniqueUsers : day: ", day, ", tz: ", tz)
+	return 100, nil
+}

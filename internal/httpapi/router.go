@@ -9,5 +9,6 @@ import (
 func NewRouter(h *Handlers) http.Handler {
 	r := chi.NewRouter()
 	r.Post("/v1/logins", h.IngestLogin)
+	r.Get("/v1/user/uniques/daily", h.GetDailyUniqueUsers)
 	return r
 }

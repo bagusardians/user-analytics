@@ -15,3 +15,7 @@ func NewUserService(r *repo.UserPgRepo) *UserService { return &UserService{repo:
 func (s *UserService) IngestLogin(ctx context.Context, userID uuid.UUID, tsUTC time.Time, tz string) error {
 	return s.repo.IngestLogin(ctx, userID, tsUTC, tz)
 }
+
+func (s *UserService) GetDailyUniqueUsers(ctx context.Context, day time.Time, tz string) (int, error) {
+	return s.repo.GetDailyUniqueUsers(ctx, day, tz)
+}
