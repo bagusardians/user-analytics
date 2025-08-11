@@ -74,3 +74,28 @@ func (h *Handlers) GetDailyUniqueUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(map[string]any{"date": dateStr, "tz": tz, "unique_users": n})
 }
+
+func (h *Handlers) GetMonthlyUniqueUsers(w http.ResponseWriter, r *http.Request) {
+	monthStr := r.URL.Query().Get("month")
+	if monthStr == "" {
+		http.Error(w, "month required", http.StatusBadRequest)
+		return
+	}
+	tz := r.URL.Query().Get("tz")
+	if tz == "" {
+		tz = "UTC"
+	}
+
+	month, err := time.Parse("2006-01", monthStr)
+	if err != nil {
+		http.Error(w, "invalid month", http.StatusBadRequest)
+		return
+	}
+
+	n, err := h.svc.GetMonthlyUniqueUsers(r.Context(), month, tz)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]any{"month": monthStr, "tz": tz, "unique_users": n})
+}

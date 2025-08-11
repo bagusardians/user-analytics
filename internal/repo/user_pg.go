@@ -23,3 +23,9 @@ func (r *UserPgRepo) GetDailyUniqueUsers(ctx context.Context, day time.Time, tz 
 	fmt.Println("GetDailyUniqueUsers : day: ", day, ", tz: ", tz)
 	return 100, nil
 }
+
+func (r *UserPgRepo) GetMonthlyUniqueUsers(ctx context.Context, month time.Time, tz string) (int, error) {
+	// TODO: retrieve from db
+	fmt.Println("GetMonthlyUniqueUsers : month: ", month, ", tz: ", tz)
+	return 2000, nil
+}

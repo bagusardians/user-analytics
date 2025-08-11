@@ -19,3 +19,7 @@ func (s *UserService) IngestLogin(ctx context.Context, userID uuid.UUID, tsUTC t
 func (s *UserService) GetDailyUniqueUsers(ctx context.Context, day time.Time, tz string) (int, error) {
 	return s.repo.GetDailyUniqueUsers(ctx, day, tz)
 }
+
+func (s *UserService) GetMonthlyUniqueUsers(ctx context.Context, month time.Time, tz string) (int, error) {
+	return s.repo.GetMonthlyUniqueUsers(ctx, month, tz)
+}
