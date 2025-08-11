@@ -6,15 +6,24 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UserPgRepo struct{}
+type UserPgRepo struct{ db *pgxpool.Pool }
 
-func NewUserPgRepo() *UserPgRepo { return &UserPgRepo{} }
+func NewUserPgRepo(db *pgxpool.Pool) *UserPgRepo { return &UserPgRepo{db: db} }
 
 func (r *UserPgRepo) IngestLogin(ctx context.Context, userID uuid.UUID, tsUTC time.Time, tz string) error {
-	// TODO: insert to db
-	fmt.Println("login ingested with: userId: ", userID, ", tsUTC: ", tsUTC, ", tz: ", tz)
+	sql := `
+    INSERT INTO user_logins (user_id, login_time)
+    VALUES ($1, $2)
+    ON CONFLICT (user_id, login_time) DO NOTHING
+  `
+
+	_, err := r.db.Exec(ctx, sql, userID, tsUTC)
+	if err != nil {
+		return fmt.Errorf("error inserting to db: %w", err)
+	}
 	return nil
 }
 

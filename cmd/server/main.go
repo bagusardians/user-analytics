@@ -1,16 +1,36 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
 	"time"
 	"user-analytics/internal/httpapi"
 	"user-analytics/internal/repo"
 	"user-analytics/internal/service"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-	r := repo.NewUserPgRepo()
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		log.Fatal("DATABASE_URL required")
+	}
+
+	ctx := context.Background()
+	cfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	db, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	r := repo.NewUserPgRepo(db)
 	s := service.NewUserService(r)
 	h := httpapi.NewHandlers(s)
 	srv := &http.Server{
