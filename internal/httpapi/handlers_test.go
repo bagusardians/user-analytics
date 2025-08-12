@@ -48,7 +48,7 @@ func TestIngestLogin_SuccessUTCConversion(t *testing.T) {
 
 	h.IngestLogin(w, req)
 
-	if got, want := w.Code, http.StatusAccepted; got != want {
+	if got, want := w.Code, http.StatusCreated; got != want {
 		t.Fatalf("status: got %d want %d body=%s", got, want, w.Body.String())
 	}
 	if !ms.ingestCalled {
