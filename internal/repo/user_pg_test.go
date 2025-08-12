@@ -94,7 +94,3 @@ func TestGetMonthlyUniqueUsers_Success(t *testing.T) {
 		t.Fatalf("doesn't meet expectations: %v", err)
 	}
 }
-
-type assertErr string
-
-func (e assertErr) Error() string { return string(e) }
