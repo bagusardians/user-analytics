@@ -14,13 +14,13 @@ import (
 )
 
 func main() {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
+	dburl := os.Getenv("DATABASE_URL")
+	if dburl == "" {
 		log.Fatal("DATABASE_URL required")
 	}
 
 	ctx := context.Background()
-	cfg, err := pgxpool.ParseConfig(dsn)
+	cfg, err := pgxpool.ParseConfig(dburl)
 	if err != nil {
 		log.Fatal(err)
 	}
