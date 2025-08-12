@@ -48,7 +48,7 @@ func (h *Handlers) IngestLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *Handlers) GetDailyUniqueUsers(w http.ResponseWriter, r *http.Request) {
