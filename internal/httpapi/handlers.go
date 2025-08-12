@@ -1,24 +1,29 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
-	"user-analytics/internal/service"
 
 	"github.com/google/uuid"
 )
 
-type Handlers struct {
-	svc *service.UserService
+type UserService interface {
+	IngestLogin(ctx context.Context, uid uuid.UUID, at time.Time) error
+	GetDailyUniqueUsers(ctx context.Context, day time.Time) (int, error)
+	GetMonthlyUniqueUsers(ctx context.Context, month time.Time) (int, error)
 }
 
-func NewHandlers(svc *service.UserService) *Handlers { return &Handlers{svc: svc} }
+type Handlers struct {
+	svc UserService
+}
+
+func NewHandlers(svc UserService) *Handlers { return &Handlers{svc: svc} }
 
 type ingestReq struct {
 	UserID    string `json:"user_id"`
 	LoginTime string `json:"login_time"`
-	TZ        string `json:"tz,omitempty"`
 }
 
 func (h *Handlers) IngestLogin(w http.ResponseWriter, r *http.Request) {
@@ -38,12 +43,8 @@ func (h *Handlers) IngestLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ts := t.UTC()
-	tz := req.TZ
-	if tz == "" {
-		tz = "UTC"
-	}
 
-	if err := h.svc.IngestLogin(r.Context(), uid, ts, tz); err != nil {
+	if err := h.svc.IngestLogin(r.Context(), uid, ts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -56,10 +57,6 @@ func (h *Handlers) GetDailyUniqueUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "date required", http.StatusBadRequest)
 		return
 	}
-	tz := r.URL.Query().Get("tz")
-	if tz == "" {
-		tz = "UTC"
-	}
 
 	day, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
@@ -67,12 +64,12 @@ func (h *Handlers) GetDailyUniqueUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	n, err := h.svc.GetDailyUniqueUsers(r.Context(), day, tz)
+	n, err := h.svc.GetDailyUniqueUsers(r.Context(), day)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]any{"date": dateStr, "tz": tz, "unique_users": n})
+	json.NewEncoder(w).Encode(map[string]any{"date": dateStr, "unique_users": n})
 }
 
 func (h *Handlers) GetMonthlyUniqueUsers(w http.ResponseWriter, r *http.Request) {
@@ -81,10 +78,6 @@ func (h *Handlers) GetMonthlyUniqueUsers(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "month required", http.StatusBadRequest)
 		return
 	}
-	tz := r.URL.Query().Get("tz")
-	if tz == "" {
-		tz = "UTC"
-	}
 
 	month, err := time.Parse("2006-01", monthStr)
 	if err != nil {
@@ -92,10 +85,10 @@ func (h *Handlers) GetMonthlyUniqueUsers(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	n, err := h.svc.GetMonthlyUniqueUsers(r.Context(), month, tz)
+	n, err := h.svc.GetMonthlyUniqueUsers(r.Context(), month)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]any{"month": monthStr, "tz": tz, "unique_users": n})
+	json.NewEncoder(w).Encode(map[string]any{"month": monthStr, "unique_users": n})
 }

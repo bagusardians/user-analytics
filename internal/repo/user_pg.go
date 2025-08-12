@@ -6,14 +6,19 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type UserPgRepo struct{ db *pgxpool.Pool }
+type PgxPool interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+}
+type UserPgRepo struct{ db PgxPool }
 
-func NewUserPgRepo(db *pgxpool.Pool) *UserPgRepo { return &UserPgRepo{db: db} }
+func NewUserPgRepo(db PgxPool) *UserPgRepo { return &UserPgRepo{db: db} }
 
-func (r *UserPgRepo) IngestLogin(ctx context.Context, userID uuid.UUID, tsUTC time.Time, tz string) error {
+func (r *UserPgRepo) IngestLogin(ctx context.Context, userID uuid.UUID, tsUTC time.Time) error {
 
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -31,37 +36,37 @@ func (r *UserPgRepo) IngestLogin(ctx context.Context, userID uuid.UUID, tsUTC ti
 
 	if _, err = tx.Exec(ctx, `
     INSERT INTO daily_unique_users (day, user_id)
-    VALUES ( ( $1 AT TIME ZONE $2 )::date , $3 )
+    VALUES ( ( $1 )::date , $2 )
     ON CONFLICT DO NOTHING
-  `, tsUTC, tz, userID); err != nil {
+  `, tsUTC, userID); err != nil {
 		return err
 	}
 
 	if _, err = tx.Exec(ctx, `
     INSERT INTO monthly_unique_users (month, user_id)
-    VALUES ( date_trunc('month', $1 AT TIME ZONE $2 )::date , $3 )
+    VALUES ( date_trunc('month', $1::timestamptz )::date , $2 )
     ON CONFLICT DO NOTHING
-  `, tsUTC, tz, userID); err != nil {
+  `, tsUTC, userID); err != nil {
 		return err
 	}
 
 	return tx.Commit(ctx)
 }
 
-func (r *UserPgRepo) GetDailyUniqueUsers(ctx context.Context, day time.Time, tz string) (int, error) {
+func (r *UserPgRepo) GetDailyUniqueUsers(ctx context.Context, day time.Time) (int, error) {
 	var n int
 	err := r.db.QueryRow(ctx, `
     SELECT COUNT(*)::int FROM daily_unique_users
-    WHERE day = ($1 AT TIME ZONE $2)::date
-  `, day, tz).Scan(&n)
+    WHERE day = ($1)::date
+  `, day).Scan(&n)
 	return n, err
 }
 
-func (r *UserPgRepo) GetMonthlyUniqueUsers(ctx context.Context, month time.Time, tz string) (int, error) {
+func (r *UserPgRepo) GetMonthlyUniqueUsers(ctx context.Context, month time.Time) (int, error) {
 	var n int
 	err := r.db.QueryRow(ctx, `
     SELECT COUNT(*)::int FROM monthly_unique_users
-    WHERE month = date_trunc('month', $1 AT TIME ZONE $2)::date
-  `, month, tz).Scan(&n)
+    WHERE month = date_trunc('month', $1::timestamp)::date
+  `, month).Scan(&n)
 	return n, err
 }
